@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ТЯПиМТ - доп №2</title>
+    <link rel="stylesheet" href="../styles/style.css">
+    <script src="../scripts/theme.js" async></script>
+    <script src="../scripts/z2.js" async></script>
+</head>
+<body class="dark-theme">
+    <!-- Меню с кнопками -->
+    <div class="menu">
+        <button type="submit" class="menu-btn" onclick="document.location='../index.html'">Назад</button>
+        <button id="theme-toggle" class="menu-btn theme-btn">Тема</button>
+        <!-- <button id="fast-toggle" class="menu-btn fast-btn">Быстро</button> -->
+        <button id="clear-button" class="menu-btn clear-btn">Удалить</button>
+    </div>
+
+    <div class="forms-wrapper">
+        <!-- Редактируемая форма -->
+        <div class="form-container form-container-little">
+            <h2>Правила КС-грамматики</h2>
+            <div class="input-box input-box-little">
+                <textarea id="rules-in" autofocus required></textarea>
+                <span class="floating-label">Введите правила с новых строк "S->A"...</span>
+            </div>
+        </div>
+        
+        <div class="form-container form-container-little">
+            <h2>Слово</h2>
+            <div class="input-box input-box-little">
+                <textarea id="word-in" autofocus required></textarea>
+                <span class="floating-label">Введите одно слово "abc"...</span>
+            </div>
+        </div>
+
+        <br>
+
+        <!-- Не редактируемая форма -->
+        <div class="form-container">
+            <h2>Состояния и TRUE/FALSE</h2>
+            <div class="input-box">
+                <textarea id="result-out" placeholder="Тут будут все состояния, а также вывод TRUE или FALSE" readonly></textarea>
+                <span id="span-process" class="floating-label">Ожидание</span>
+            </div>
+        </div>
+
+        <!-- Кнопки выполнения действий -->
+        <button id="run-button" type="submit" class="submit-btn">Запуск алгоритма Эрли!</button>
+    </div>
+</body> 
+</html>

@@ -26,12 +26,12 @@ try {
     const metaSymbol = `•`;
     
     class State {
-        constructor(rule, dot, start, end) {//, backPointers = []) {
+        constructor(rule, dot, start, end, backPointers = []) {
             this.rule = rule; // [левая часть, правая часть]
             this.dot = dot; // Позиция мета-символа/маркера/точки
             this.start = start; // Начальная позиция в слове
             this.end = end; // Конечная позиция в слове
-            // this.backPointers = backPointers;
+            this.backPointers = backPointers;
         }
         
         isComplete() {
@@ -45,7 +45,7 @@ try {
         toString() {
             const beforeDot = this.rule[1].slice(0, this.dot).join("");
             const afterDot = this.rule[1].slice(this.dot).join("");
-            return `[${this.rule[0]}->${beforeDot}`+ metaSymbol +`${afterDot},${this.start}]`; // \t|${this.end}|`;
+            return `[${this.rule[0]}->${beforeDot}`+ metaSymbol +`${afterDot}, ${this.start}]`; // \t|${this.end}|`;
         }
     }
 
@@ -55,14 +55,19 @@ try {
             this.startSymbol = startSymbol;
         }
 
+        // parse2(word) {
+        //     while (true) {
+        //     }
+        // }
+
         parse(word) {
             let flag = 0;
-            const D = Array(word.length + 1).fill().map(() => []);
-            D[0].push(new State(["S1", [this.startSymbol]], 0, 0, 0));
+            const chart = Array(word.length + 1).fill().map(() => []);
+            chart[0].push(new State(["S1", [this.startSymbol]], 0, 0, 0));
             let state;
             let curCondition = -1;
             for (let i = 0; i <= word.length; i++) {
-                for (state of D[i]) {
+                for (state of chart[i]) {
                     if (state.end !== curCondition) {
                         curCondition = state.end;
                         if (state.end != 0) {
@@ -71,28 +76,34 @@ try {
                         resultOutUpdate("===============\n  Состояние " + state.end + "\n");
                         resultOutUpdate("    " + word.splice(curCondition, 0, metaSymbol) + "\n---------------\n");
                     }
+                    // TODO: посмотреть что не так, возможно переработать базовые функции predict, scan, complete и сам процесс
+                    resultOutUpdate(state.toString() + "\t- ");
+                    //// if (flag < 2) {
+                    ////     resultOutUpdate(state.toString() + "\t- ");
+                    ////     if (state.rule[0] === "S1") flag++;
+                    //// }
                     if (!state.isComplete()) {
                         const nextSym = state.nextSymbol();
                         if (this.isNonTerminal(nextSym)) {
-                            this.Predict(state, i, D);
+                            this.Predict(state, i, chart);
                         } else {
-                            this.Scan(state, i, word, D);
+                            this.Scan(state, i, word, chart);
                         }
                     } else {
-                        this.Complete(state, i, D);
-                    }
-                    if (flag < 2) {
-                        resultOutUpdate(state.toString() + "\n");
-                        if (state.rule[0] === "S1") flag++;
+                        this.Complete(state, i, chart);
+                        // отлов конечной конфигурации в успешном случае
+                        if (i == word.length && state.rule[0] === "S1" && state.start === 0) {
+                            break;
+                        }
                     }
                 }
             }
         
-            const res = D[word.length].some(
+            const res = chart[word.length].some(
                 (state) =>
                 state.rule[0] === "S1" && state.isComplete() && state.start === 0
             );
-            if (D.length - 1 > state.end) {
+            if (chart.length - 1 > state.end) {
                 resultOutUpdate("===============\n\n===============\n  Состояние " + (state.end + 1) + "\n");
                 resultOutUpdate("    " + word.splice(curCondition + 1, 0, metaSymbol) + "\n---------------\nПусто\n");
             }
@@ -102,18 +113,19 @@ try {
             return res
         }
 
-        Predict(state, pos, D) {
+        Predict(state, pos, chart) {
             for (let rule of this.grammar) {
                 if (rule[0] === state.nextSymbol()) {
                     const newState = new State(rule, 0, pos, pos);
-                    if (!this.stateExists(D[pos], newState)) {
-                    D[pos].push(newState);
+                    if (!this.stateExists(chart[pos], newState)) {
+                    chart[pos].push(newState);
                     }
                 }
             }
+            resultOutUpdate("Predict\n");
         }
 
-        Scan(state, pos, word, D) {
+        Scan(state, pos, word, chart) {
             if (pos < word.length && word[pos] === state.nextSymbol()) {
                 const newState = new State(
                     state.rule,
@@ -121,14 +133,15 @@ try {
                     state.start,
                     pos + 1
                 );
-                if (!this.stateExists(D[pos + 1], newState)) {
-                    D[pos + 1].push(newState);
+                if (!this.stateExists(chart[pos + 1], newState)) {
+                    chart[pos + 1].push(newState);
                 }
             }
+            resultOutUpdate("Scan\n");
         }
 
-        Complete(state, pos, D) {
-            for (let prevState of D[state.start]) {
+        Complete(state, pos, chart) {
+            for (let prevState of chart[state.start]) {
                 if (prevState.nextSymbol() === state.rule[0]) {
                     const newState = new State(
                         prevState.rule,
@@ -136,11 +149,15 @@ try {
                         prevState.start,
                         pos
                     );
-                    if (!this.stateExists(D[pos], newState)) {
-                        D[pos].push(newState);
+                    // TODO: костыль с условием для того, чтобы убрать вывод S1 ->... НЕ в последних состояниях
+                    // resultOutUpdate(JSON.stringify(newState.rule));
+                    if (!this.stateExists(chart[pos], newState) &&
+                            !(pos < chart.length - 1 && newState.rule[0] == "S1")) {
+                        chart[pos].push(newState);
                     }
                 }
             }
+            resultOutUpdate("Complete\n");
         }
 
         isNonTerminal(symbol) {

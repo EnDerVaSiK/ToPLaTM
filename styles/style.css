@@ -299,6 +299,16 @@ h3 {
     border: 3px solid green;
 }
 
+.right-pin {
+    max-width: 160px;
+    position: relative;
+    left: 80%;
+    top: -50px;
+    right: 0;
+    /* margin-left: 66%; */
+    /* margin: 20; */
+}
+
 
 
 

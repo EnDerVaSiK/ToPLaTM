@@ -9,13 +9,19 @@ function showNotification({className, html}) {
     setTimeout(() => notification.remove(), 1500);
 }
 
+
 String.prototype.splice = function(idx, rem, str) {
     return this.slice(0, idx) + str + this.slice(idx + Math.abs(rem));
 };
 
+
 try {
 
+
     //-------------------------------------- BACK --------------------------------------\\
+
+
+
 
     const metaSymbol = `•`;
     
@@ -51,12 +57,12 @@ try {
 
         parse(word) {
             let flag = 0;
-            const chart = Array(word.length + 1).fill().map(() => []);
-            chart[0].push(new State(["S1", [this.startSymbol]], 0, 0, 0));
+            const D = Array(word.length + 1).fill().map(() => []);
+            D[0].push(new State(["S1", [this.startSymbol]], 0, 0, 0));
             let state;
             let curCondition = -1;
             for (let i = 0; i <= word.length; i++) {
-                for (state of chart[i]) {
+                for (state of D[i]) {
                     if (state.end !== curCondition) {
                         curCondition = state.end;
                         if (state.end != 0) {
@@ -68,12 +74,12 @@ try {
                     if (!state.isComplete()) {
                         const nextSym = state.nextSymbol();
                         if (this.isNonTerminal(nextSym)) {
-                            this.Predict(state, i, chart);
+                            this.Predict(state, i, D);
                         } else {
-                            this.Scan(state, i, word, chart);
+                            this.Scan(state, i, word, D);
                         }
                     } else {
-                        this.Complete(state, i, chart);
+                        this.Complete(state, i, D);
                     }
                     if (flag < 2) {
                         resultOutUpdate(state.toString() + "\n");
@@ -82,11 +88,11 @@ try {
                 }
             }
         
-            const res = chart[word.length].some(
+            const res = D[word.length].some(
                 (state) =>
                 state.rule[0] === "S1" && state.isComplete() && state.start === 0
             );
-            if (chart.length - 1 > state.end) {
+            if (D.length - 1 > state.end) {
                 resultOutUpdate("===============\n\n===============\n  Состояние " + (state.end + 1) + "\n");
                 resultOutUpdate("    " + word.splice(curCondition + 1, 0, metaSymbol) + "\n---------------\nПусто\n");
             }
@@ -96,18 +102,18 @@ try {
             return res
         }
 
-        Predict(state, pos, chart) {
+        Predict(state, pos, D) {
             for (let rule of this.grammar) {
                 if (rule[0] === state.nextSymbol()) {
                     const newState = new State(rule, 0, pos, pos);
-                    if (!this.stateExists(chart[pos], newState)) {
-                    chart[pos].push(newState);
+                    if (!this.stateExists(D[pos], newState)) {
+                    D[pos].push(newState);
                     }
                 }
             }
         }
 
-        Scan(state, pos, word, chart) {
+        Scan(state, pos, word, D) {
             if (pos < word.length && word[pos] === state.nextSymbol()) {
                 const newState = new State(
                     state.rule,
@@ -115,14 +121,14 @@ try {
                     state.start,
                     pos + 1
                 );
-                if (!this.stateExists(chart[pos + 1], newState)) {
-                    chart[pos + 1].push(newState);
+                if (!this.stateExists(D[pos + 1], newState)) {
+                    D[pos + 1].push(newState);
                 }
             }
         }
 
-        Complete(state, pos, chart) {
-            for (let prevState of chart[state.start]) {
+        Complete(state, pos, D) {
+            for (let prevState of D[state.start]) {
                 if (prevState.nextSymbol() === state.rule[0]) {
                     const newState = new State(
                         prevState.rule,
@@ -130,8 +136,8 @@ try {
                         prevState.start,
                         pos
                     );
-                    if (!this.stateExists(chart[pos], newState)) {
-                        chart[pos].push(newState);
+                    if (!this.stateExists(D[pos], newState)) {
+                        D[pos].push(newState);
                     }
                 }
             }
@@ -162,27 +168,24 @@ try {
                 rr = rr.split(`|`);
                 for (rrr of rr)
                     grammar.push([r[0], rrr.split('')]);
-            } else grammar.push(r[0], rr.split(''));
+            } else {
+                grammar.push([r[0], rr.split('')]);
+            }
         }
         return grammar;
     }
 
     function EarleyProcess(rules, word) {
-        // grammar = rules.trim().replaceAll(' ', '').split(`\n`).map((line) => line.trim().split(`->`));
-        // for (r of grammar) {
-        //     r[1] = r[1].split('');
-        // }
         grammar = formGrammar(rules);
 
-        // for (g of grammar) {
-        //     console.log(g);
-        // }
         startSymbol = grammar[0][0].trim().replaceAll(' ', '');
 
         let earley = new EarleyParser(grammar, startSymbol);
 
         return earley.parse(word) ? "TRUE" : "FALSE";
     }
+
+
 
 
     //------------------------------------------------------------------------------------------//
@@ -196,51 +199,110 @@ try {
 
 
     // rules:
-
-    // S -> A + S
-    // S->b
-    // A ->S - A
-    // A ->a
+    // S->A + S | b
+    // A->S-A|a
 
 
     // word:
-    
     // a + b
 
 
     // output:
 
+    // ===============
+    //   Состояние 0
+    //     •a-b
     // ---------------
-    // Состояние 0
-    // ---------------
-    // [S1->•S,0]	|0|
-    // [S->•A+S,0]	|0|
-    // [S->•b,0]	|0|
-    // [A->•S-A,0]	|0|
-    // [A->•a,0]	|0|
+    // [S1->•S,0]
+    // [S->•A+S,0]
+    // [S->•b,0]
+    // [A->•S-A,0]
+    // [A->•a,0]
+    // ===============
 
+    // ===============
+    //   Состояние 1
+    //     a•-b
     // ---------------
-    // Состояние 1
-    // ---------------
-    // [A->a•,0]	|1|
-    // [S->A•+S,0]	|1|
+    // [A->a•,0]
+    // [S->A•+S,0]
+    // ===============
 
+    // ===============
+    //   Состояние 2
+    //     a-•b
     // ---------------
-    // Состояние 2
-    // ---------------
-    // [S->A+•S,0]	|2|
-    // [S->•A+S,2]	|2|
-    // [S->•b,2]	|2|
-    // [A->•S-A,2]	|2|
-    // [A->•a,2]	|2|
+    // Пусто
+    // ===============
 
+    // FALSE
+
+
+
+    // rules:
+    // S->CD
+    // C->BE
+    // D->AB
+    // A->x
+    // A->EA
+    // E->y
+    // B->y
+
+    // word:
+    // yyxy
+
+    // output:
+
+    // ===============
+    //   Состояние 0
+    //     •yyxy
     // ---------------
-    // Состояние 3
+    // [S1->•S,0]
+    // [S->•CD,0]
+    // [C->•BE,0]
+    // [B->•y,0]
+    // ===============
+
+    // ===============
+    //   Состояние 1
+    //     y•yxy
     // ---------------
-    // [S->b•,2]	|3|
-    // [S->A+S•,0]	|3|
-    // [A->S•-A,2]	|3|
-    // [S1->S•,0]	|3|
+    // [B->y•,0]
+    // [C->B•E,0]
+    // [E->•y,1]
+    // ===============
+
+    // ===============
+    //   Состояние 2
+    //     yy•xy
+    // ---------------
+    // [E->y•,1]
+    // [C->BE•,0]
+    // [S->C•D,0]
+    // [D->•AB,2]
+    // [A->•x,2]
+    // [A->•EA,2]
+    // [E->•y,2]
+    // ===============
+
+    // ===============
+    //   Состояние 3
+    //     yyx•y
+    // ---------------
+    // [A->x•,2]
+    // [D->A•B,2]
+    // [B->•y,3]
+    // ===============
+
+    // ===============
+    //   Состояние 4
+    //     yyxy•
+    // ---------------
+    // [B->y•,3]
+    // [D->AB•,2]
+    // [S->CD•,0]
+    // [S1->S•,0]
+    // ===============
 
     // TRUE
 
@@ -253,6 +315,8 @@ try {
 
 
     //-------------------------------------- FRONT -------------------------------------\\
+
+
 
 
     // искусственная задержка
@@ -347,10 +411,9 @@ try {
     });
 
 
+
+
     //------------------------------------------------------------------------------------------//
-
-
-
 
 
 
